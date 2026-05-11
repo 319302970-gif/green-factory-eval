@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>绿色工厂评价系统 | GB/T 36132-2025</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --green-50:#f0fdf4;--green-100:#dcfce7;--green-200:#bbf7d0;
+  --green-500:#22c55e;--green-600:#16a34a;--green-700:#15803d;--green-800:#166534;
+  --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;
+  --gray-400:#9ca3af;--gray-500:#6b7280;--gray-600:#4b5563;
+  --gray-700:#374151;--gray-800:#1f2937;
+  --amber-100:#fef3c7;--amber-600:#d97706;
+  --blue-100:#dbeafe;--blue-600:#2563eb;
+  --red-100:#fee2e2;--red-600:#dc2626;
+  --radius:12px;--shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.04);
+}
+body { font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;
+  background:#f0f7f0;color:var(--gray-800);min-height:100vh; }
+
+/* 顶部 */
+.topbar { background:var(--green-800);color:#fff;padding:0 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  height:56px;position:sticky;top:0;z-index:100; }
+.topbar h1 { font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px; }
+.logo-icon { width:28px;height:28px;background:var(--green-500);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;font-size:16px; }
+.btn { padding:6px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;
+  font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap; }
+.btn-ghost { background:rgba(255,255,255,.15);color:#fff; }
+.btn-ghost:hover { background:rgba(255,255,255,.25); }
+.btn-primary { background:var(--green-500);color:#fff; }
+.btn-primary:hover { background:var(--green-600); }
+.btn-outline { background:#fff;color:var(--green-700);border:1.5px solid var(--green-600); }
+.btn-outline:hover { background:var(--green-50); }
+.btn-pdf { background:var(--amber-600);color:#fff; }
+.btn-pdf:hover { background:#b45309; }
+
+/* 步骤条 */
+.step-bar { background:#fff;border-bottom:1px solid var(--gray-200);
+  display:flex;overflow-x:auto;padding:0 12px; }
+.step-item { padding:14px 16px;font-size:13px;color:var(--gray-500);cursor:pointer;
+  border-bottom:2.5px solid transparent;white-space:nowrap;transition:all .15s;
+  display:flex;align-items:center;gap:6px; }
+.step-item.active { color:var(--green-700);border-bottom-color:var(--green-600);font-weight:500; }
+.step-item.done { color:var(--green-600); }
+.step-badge { width:18px;height:18px;border-radius:50%;font-size:11px;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:600; }
+.step-item.active .step-badge { background:var(--green-600);color:#fff; }
+.step-item.done .step-badge { background:var(--green-100);color:var(--green-700); }
+.step-item:not(.active):not(.done) .step-badge { background:var(--gray-100);color:var(--gray-500); }
+
+/* 主容器 */
+.main { max-width:900px;margin:0 auto;padding:20px 16px 80px; }
+.page { display:none; } .page.active { display:block; }
+
+/* 通用卡片 */
+.card { background:#fff;border-radius:var(--radius);padding:20px 24px;
+  margin-bottom:16px;box-shadow:var(--shadow); }
+.card-title { font-size:15px;font-weight:600;color:var(--gray-800);
+  margin-bottom:16px;display:flex;align-items:center;gap:8px; }
+.cat-dot { width:10px;height:10px;border-radius:3px;flex-shrink:0; }
+
+/* 表单 */
+.form-grid { display:grid;grid-template-columns:1fr 1fr;gap:14px; }
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+.form-group { display:flex;flex-direction:column;gap:5px; }
+.form-group label { font-size:13px;color:var(--gray-600);font-weight:500; }
+.form-group input,.form-group select,.form-group textarea {
+  padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;
+  font-size:14px;color:var(--gray-800);outline:none;transition:border .15s;
+  background:#fff;font-family:inherit; }
+.form-group input:focus,.form-group select:focus { border-color:var(--green-500); }
+
+/* ========== 指标输入区块 ========== */
+.ind-block { border:1px solid var(--gray-100);border-radius:10px;margin-bottom:12px;overflow:hidden; }
+.ind-header { padding:14px 16px;background:var(--gray-50);border-bottom:1px solid var(--gray-100);
+  display:flex;align-items:flex-start;gap:10px;cursor:pointer; }
+.ind-toggle { background:none;border:none;cursor:pointer;color:var(--gray-400);
+  font-size:13px;padding:0;flex-shrink:0;margin-top:1px;transition:transform .2s; }
+.ind-toggle.open { transform:rotate(90deg); }
+.ind-title-wrap { flex:1; }
+.ind-title { font-size:14px;font-weight:600;color:var(--gray-800); }
+.ind-subtitle { font-size:12px;color:var(--gray-500);margin-top:3px; }
+
+/* 得分显示 */
+.ind-score-display { text-align:center;min-width:80px; }
+.score-value { font-size:28px;font-weight:700;line-height:1; }
+.score-label { font-size:10px;color:var(--gray-500);margin-top:2px; }
+.score-max { font-size:11px;color:var(--gray-400); }
+
+/* 数据输入区 */
+.ind-inputs { padding:16px;background:#fff; }
+.input-row { display:grid;grid-template-columns:1fr 120px auto;gap:10px;align-items:end;
+  margin-bottom:10px; }
+@media(max-width:540px){
+  .input-row{grid-template-columns:1fr 1fr;}
+}
+.input-field { display:flex;flex-direction:column;gap:4px; }
+.input-field label { font-size:11px;color:var(--gray-500);font-weight:500; }
+.input-field input { padding:6px 10px;border:1.5px solid var(--gray-200);
+  border-radius:6px;font-size:13px;text-align:right;outline:none;transition:border .15s; }
+.input-field input:focus { border-color:var(--green-500); }
+.input-unit { font-size:11px;color:var(--gray-500);white-space:nowrap;padding-bottom:8px; }
+
+/* 计算结果 */
+.calc-result { background:var(--green-50);border-radius:8px;padding:12px 14px;margin:12px 0 0;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px; }
+.calc-result .calc-item { text-align:center; }
+.calc-result .calc-val { font-size:16px;font-weight:700;color:var(--green-700); }
+.calc-result .calc-name { font-size:10px;color:var(--gray-500);margin-top:2px; }
+.calc-result .vs-benchmark { display:flex;align-items:center;gap:4px;padding:4px 10px;
+  border-radius:6px;font-size:11px;font-weight:600; }
+.vs-benchmark.good { background:#dcfce7;color:#15803d; }
+.vs-benchmark.medium { background:#fef3c7;color:#b45309; }
+.vs-benchmark.poor { background:#fee2e2;color:#dc2626; }
+
+/* 自动得分 */
+.auto-score { text-align:center;margin-top:12px;padding-top:12px;
+  border-top:1px dashed var(--gray-200); }
+.auto-score-label { font-size:11px;color:var(--gray-500);margin-bottom:4px; }
+.auto-score-value { font-size:36px;font-weight:700;line-height:1; }
+.auto-score-max { font-size:13px;font-weight:400;color:var(--gray-400); }
+
+/* 指标详情 */
+.ind-detail { display:none;padding:0 14px 14px;background:#fff; }
+.ind-detail.open { display:block; }
+.detail-section { margin-bottom:12px; }
+.detail-label { font-size:11px;font-weight:600;color:var(--gray-500);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px; }
+.basis-tag { display:inline-block;background:var(--green-50);color:var(--green-700);
+  border:1px solid var(--green-200);border-radius:4px;font-size:11px;
+  padding:2px 7px;margin:2px 2px 2px 0; }
+.note-box { background:var(--amber-100);border-radius:6px;padding:10px 14px;
+  font-size:12px;color:#78350f;line-height:1.6; }
+
+/* 类别汇总 */
+.cat-total-bar { display:flex;justify-content:flex-end;align-items:center;gap:8px;
+  padding-top:12px;border-top:1px solid #f3f4f6;margin-top:8px; }
+
+/* 底部导航 */
+.bottom-nav { position:fixed;bottom:0;left:0;right:0;background:#fff;
+  border-top:1px solid var(--gray-200);padding:12px 16px;
+  display:flex;justify-content:space-between;align-items:center;
+  box-shadow:0 -2px 12px rgba(0,0,0,.06);z-index:90; }
+.progress-bar-wrap { flex:1;margin:0 16px; }
+.progress-bar-label { font-size:11px;color:var(--gray-500);margin-bottom:4px; }
+.progress-bar { height:6px;background:var(--gray-100);border-radius:3px;overflow:hidden; }
+.progress-bar-fill { height:100%;background:var(--green-500);border-radius:3px;transition:width .3s; }
+
+/* 报告页 */
+.score-hero { text-align:center;padding:24px 0 20px; }
+.score-big { font-size:64px;font-weight:700;line-height:1;margin-bottom:6px; }
+.score-label { font-size:15px;color:var(--gray-500); }
+.level-badge { display:inline-block;padding:5px 18px;border-radius:20px;
+  font-size:14px;font-weight:600;margin-top:10px; }
+.charts-grid { display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px; }
+@media(max-width:620px){.charts-grid{grid-template-columns:1fr;}}
+.cat-bar-row { display:grid;grid-template-columns:100px 1fr 52px;
+  gap:10px;align-items:center;margin-bottom:10px; }
+.cat-bar-row .cat-label { font-size:12px;color:var(--gray-600);text-align:right; }
+.cat-bar-bg { height:10px;background:var(--gray-100);border-radius:5px;overflow:hidden; }
+.cat-bar-fill { height:100%;border-radius:5px;transition:width .6s; }
+.cat-bar-row .cat-val { font-size:12px;font-weight:600;color:var(--gray-700); }
+.rec-list { list-style:none; }
+.rec-list li { display:flex;gap:10px;padding:10px 0;
+  border-bottom:1px solid var(--gray-100);font-size:13px;color:var(--gray-700);line-height:1.6; }
+.rec-list li:last-child { border-bottom:none; }
+.rec-icon { width:22px;height:22px;border-radius:6px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:13px;margin-top:1px; }
+
+/* 首页 */
+.hero-section { background:linear-gradient(135deg,var(--green-800) 0%,var(--green-600) 100%);
+  border-radius:var(--radius);padding:32px 24px;color:#fff;margin-bottom:20px; }
+.hero-section h2 { font-size:22px;font-weight:700;margin-bottom:8px; }
+.hero-section p { font-size:14px;opacity:.88;line-height:1.7; }
+.feature-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px; }
+.feature-card { background:rgba(255,255,255,.12);border-radius:10px;padding:14px;
+  font-size:13px;line-height:1.5; }
+.feature-card .fi { font-size:22px;margin-bottom:6px; }
+
+/* 行业基准参考 */
+.benchmark-ref { background:var(--blue-100);border-radius:8px;padding:12px 14px;margin:10px 0; }
+.benchmark-ref .title { font-size:12px;font-weight:600;color:var(--blue-600);margin-bottom:8px; }
+.benchmark-ref .row { display:flex;justify-content:space-between;font-size:12px;
+  padding:3px 0;color:var(--gray-700); }
+.benchmark-ref .val { font-weight:600;color:var(--blue-600); }
+
+/* 打印 */
+@media print {
+  .topbar,.step-bar,.bottom-nav,.no-print { display:none !important; }
+  body { background:#fff; }
+  .main { max-width:100%;padding:0 20px; }
+  .page.active { display:block !important; }
+  .card { box-shadow:none;border:1px solid #ddd; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>
+    <div class="logo-icon">🌿</div>
+    绿色工厂评价系统
+    <span style="font-size:11px;font-weight:400;opacity:.7;margin-left:4px">GB/T 36132-2025</span>
+  </h1>
+  <div class="actions">
+    <button class="btn btn-ghost no-print" onclick="resetAll()">重置</button>
+    <button class="btn btn-pdf no-print" onclick="exportPDF()" id="pdfBtn" style="display:none">📄 导出PDF</button>
+  </div>
+</div>
+
+<div class="step-bar no-print">
+  <div class="step-item active" onclick="goPage(0)" id="step0"><span class="step-badge">1</span>企业信息</div>
+  <div class="step-item" onclick="goPage(1)" id="step1"><span class="step-badge">2</span>能源低碳化</div>
+  <div class="step-item" onclick="goPage(2)" id="step2"><span class="step-badge">3</span>资源高效化</div>
+  <div class="step-item" onclick="goPage(3)" id="step3"><span class="step-badge">4</span>生产洁净化</div>
+  <div class="step-item" onclick="goPage(4)" id="step4"><span class="step-badge">5</span>产品绿色化</div>
+  <div class="step-item" onclick="goPage(5)" id="step5"><span class="step-badge">6</span>用地集约化</div>
+  <div class="step-item" onclick="goPage(6)" id="step6"><span class="step-badge">7</span>评价报告</div>
+</div>
+
+<div class="main">
+
+<!-- PAGE 0 企业信息 -->
+<div class="page active" id="page0">
+  <div class="hero-section">
+    <h2>🏭 绿色工厂评价系统</h2>
+    <p>依据 GB/T 36132-2025《绿色工厂评价通则》（2025年12月31日实施），从"新五化"——能源低碳化、资源高效化、生产洁净化、产品绿色化、用地集约化五大维度，对工厂绿色化水平进行全面量化评价。</p>
+    <div class="feature-grid">
+      <div class="feature-card"><div class="fi">📝</div>输入实际数据<br>系统自动评分</div>
+      <div class="feature-card"><div class="fi">📐</div>基准值+引领值<br>量化评分方法</div>
+      <div class="feature-card"><div class="fi">📊</div>可视化分析报告<br>雷达图+柱状图</div>
+      <div class="feature-card"><div class="fi">📄</div>一键导出PDF<br>专业格式报告</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📝 企业基本信息</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>企业名称 *</label>
+        <input type="text" id="f_company" placeholder="请输入企业全称">
+      </div>
+      <div class="form-group">
+        <label>统一社会信用代码</label>
+        <input type="text" id="f_code" placeholder="18位社会信用代码">
+      </div>
+      <div class="form-group">
+        <label>所属行业 *</label>
+        <select id="f_industry" onchange="onIndustryChange()">
+          <option value="">请选择行业</option>
+          <option value="automobile">汽车制造</option>
+          <option value="electronics">电子电气</option>
+          <option value="steel">钢铁冶金</option>
+          <option value="chemical">化工</option>
+          <option value="textile">纺织服装</option>
+          <option value="building">建材</option>
+          <option value="food">食品饮料</option>
+          <option value="machinery">机械装备</option>
+          <option value="other">其他制造业</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>企业规模</label>
+        <select id="f_size">
+          <option value="">请选择规模</option>
+          <option>大型企业（≥1000人）</option><option>中型企业（300-999人）</option>
+          <option>小型企业（100-299人）</option><option>微型企业（&lt;100人）</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>所在省市</label>
+        <input type="text" id="f_city" placeholder="例：广东省深圳市">
+      </div>
+      <div class="form-group">
+        <label>评价年度</label>
+        <input type="text" id="f_year" placeholder="例：2025" value="2025">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>年工业总产值（万元）*</label>
+        <input type="number" id="f_output" placeholder="请输入企业年度工业总产值，用于计算各项强度指标" oninput="recalculateAll()">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>评价人员 / 部门</label>
+        <input type="text" id="f_evaluator" placeholder="请输入评价负责人及部门">
+      </div>
+    </div>
+    <div id="industryAlert" style="display:none;margin-top:12px;padding:10px 14px;
+      background:var(--amber-100);border-radius:8px;font-size:13px;color:#78350f;">
+      ⚠️ 请先选择所属行业并填写工业总产值，系统将根据行业基准值自动计算评分。
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 1-5 动态生成 -->
+<div class="page" id="page1"></div>
+<div class="page" id="page2"></div>
+<div class="page" id="page3"></div>
+<div class="page" id="page4"></div>
+<div class="page" id="page5"></div>
+
+<!-- PAGE 6 报告 -->
+<div class="page" id="page6"><div id="report-content"></div></div>
+
+</div>
+
+<!-- 底部导航 -->
+<div class="bottom-nav no-print">
+  <button class="btn btn-outline" id="prevBtn" onclick="prevPage()" style="min-width:80px">← 上一步</button>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-label" id="progressLabel">步骤 1/7</div>
+    <div class="progress-bar"><div class="progress-bar-fill" id="progressFill" style="width:14%"></div></div>
+  </div>
+  <button class="btn btn-primary" id="nextBtn" onclick="nextPage()" style="min-width:80px">下一步 →</button>
+</div>
+
+<script>
+/* =============================================
+   指标数据体系（含数据输入字段、自动计算逻辑）
+   GB/T 36132-2025 评价指标体系 —— "新五化"框架
+   评分方法：输入实际数据 → 自动计算指标值 → 与基准值/引领值比较 → 自动评分
+   ============================================= */
+
+/* 行业基准值数据库（简化版，实际应用中应更完整）*/
+const INDUSTRY_BENCHMARKS = {
+  automobile: { name:'汽车制造',
+    energyIntensity: {basis:0.8,leader:0.5},      // tce/万元
+    carbonIntensity: {basis:2.0,leader:1.2},      // tCO2e/万元
+    waterIntensity: {basis:3.0,leader:1.5},       // m3/万元
+    solidWaste: {basis:85,leader:95},              // %
+    vocsIntensity: {basis:0.15,leader:0.08},      // kg/万元
+    codIntensity: {basis:0.08,leader:0.04},        // kg/万元
+  },
+  electronics: { name:'电子电气',
+    energyIntensity: {basis:0.4,leader:0.25},
+    carbonIntensity: {basis:1.0,leader:0.6},
+    waterIntensity: {basis:2.0,leader:1.0},
+    solidWaste: {basis:90,leader:98},
+    vocsIntensity: {basis:0.1,leader:0.05},
+    codIntensity: {basis:0.05,leader:0.02},
+  },
+  steel: { name:'钢铁冶金',
+    energyIntensity: {basis:1.5,leader:1.0},
+    carbonIntensity: {basis:4.0,leader:2.5},
+    waterIntensity: {basis:4.0,leader:2.0},
+    solidWaste: {basis:75,leader:90},
+    vocsIntensity: {basis:0.3,leader:0.15},
+    codIntensity: {basis:0.1,leader:0.05},
+  },
+  chemical: { name:'化工',
+    energyIntensity: {basis:1.2,leader:0.7},
+    carbonIntensity: {basis:3.0,leader:1.8},
+    waterIntensity: {basis:5.0,leader:2.5},
+    solidWaste: {basis:80,leader:92},
+    vocsIntensity: {basis:0.4,leader:0.2},
+    codIntensity: {basis:0.12,leader:0.06},
+  },
+  textile: { name:'纺织服装',
+    energyIntensity: {basis:0.6,leader:0.35},
+    carbonIntensity: {basis:1.5,leader:0.9},
+    waterIntensity: {basis:15.0,leader:8.0},
+    solidWaste: {basis:85,leader:95},
+    vocsIntensity: {basis:0.08,leader:0.04},
+    codIntensity: {basis:0.06,leader:0.03},
+  },
+  building: { name:'建材',
+    energyIntensity: {basis:1.0,leader:0.6},
+    carbonIntensity: {basis:2.5,leader:1.5},
+    waterIntensity: {basis:3.5,leader:1.8},
+    solidWaste: {basis:70,leader:88},
+    vocsIntensity: {basis:0.2,leader:0.1},
+    codIntensity: {basis:0.07,leader:0.03},
+  },
+  food: { name:'食品饮料',
+    energyIntensity: {basis:0.3,leader:0.18},
+    carbonIntensity: {basis:0.8,leader:0.5},
+    waterIntensity: {basis:4.0,leader:2.0},
+    solidWaste: {basis:88,leader:96},
+    vocsIntensity: {basis:0.05,leader:0.02},
+    codIntensity: {basis:0.08,leader:0.04},
+  },
+  machinery: { name:'机械装备',
+    energyIntensity: {basis:0.5,leader:0.3},
+    carbonIntensity: {basis:1.2,leader:0.7},
+    waterIntensity: {basis:2.5,leader:1.2},
+    solidWaste: {basis:82,leader:94},
+    vocsIntensity: {basis:0.12,leader:0.06},
+    codIntensity: {basis:0.06,leader:0.03},
+  },
+  other: { name:'其他制造业',
+    energyIntensity: {basis:0.7,leader:0.4},
+    carbonIntensity: {basis:1.8,leader:1.0},
+    waterIntensity: {basis:4.0,leader:2.0},
+    solidWaste: {basis:80,leader:92},
+    vocsIntensity: {basis:0.15,leader:0.08},
+    codIntensity: {basis:0.08,leader:0.04},
+  }
+};
+
+/* 行业选择提示 */
+function onIndustryChange() {
+  const alert = document.getElementById('industryAlert');
+  const industry = document.getElementById('f_industry').value;
+  const output = document.getElementById('f_output').value;
+  if (industry && output) {
+    alert.style.display = 'block';
+    alert.innerHTML = `✅ 已选择「${INDUSTRY_BENCHMARKS[industry].name}」行业，请继续填写各维度数据，系统将根据该行业基准值自动计算评分。`;
+    alert.style.background = '#dcfce7';
+    alert.style.color = '#15803d';
+  } else {
+    alert.style.display = 'block';
+    alert.innerHTML = '⚠️ 请先选择所属行业并填写工业总产值（必填），系统将根据行业基准值自动计算评分。';
+    alert.style.background = 'var(--amber-100)';
+    alert.style.color = '#78350f';
+  }
+}
+
+const CATEGORIES = [
+  /* ==================== 能源低碳化 35分 ==================== */
+  {
+    id:'energy', name:'能源低碳化', color:'#16a34a', bg:'#dcfce7', maxScore:35,
+    desc:'评价企业能源消耗强度、碳排放强度与可再生能源利用水平',
+    items:[
+      {
+        id:'ec1', name:'综合能耗强度', max:10,
+        subtitle:'单位产值综合能耗（tce/万元）',
+        basis:['GB/T 2589','GB/T 36132-2025'],
+        note:'综合能耗需折算为标准煤（tce）；请填写年度综合能耗总量（来自能源台账）和工业总产值。',
+        /* 数据输入字段定义 */
+        dataFields:[
+          {id:'ec1_energy', label:'年综合能耗总量', unit:'tce/年', placeholder:'如：850'},
+          {id:'ec1_output', label:'年工业总产值', unit:'万元', ref:'f_output', readonly:true}
+        ],
+        /* 计算公式 */
+        formula:function(values, industry) {
+          const energy = parseFloat(values['ec1_energy']) || 0;
+          const output = parseFloat(values['f_output']) || 0;
+          if (output <= 0) return {calculated:null, score:0, level:'pending'};
+          const intensity = energy / output;
+          const bm = INDUSTRY_BENCHMARKS[industry]?.energyIntensity || INDUSTRY_BENCHMARKS.other.energyIntensity;
+          let score = 0;
+          if (intensity <= 0) score = 0;
+          else if (intensity <= bm.leader) score = 10;
+          else if (intensity <= bm.leader * 1.2) score = 8;
+          else if (intensity <= bm.basis) score = 6;
+          else if (intensity <= bm.basis * 1.1) score = 4;
+          else score = 2;
+          let level = 'poor';
+          if (intensity <= bm.leader) level = 'good';
+          else if (intensity <= bm.basis) level = 'medium';
+          return {calculated:intensity.toFixed(3), score, level, benchmark:bm};
+        },
+        /* 评分标准说明（用于详情） */
+        scoringLevels:[
+          {score:'10分', crit:'能耗强度 ≤ 引领值（行业前5%）', color:'#16a34a'},
+          {score:'8分', crit:'能耗强度 ≤ 引领值×1.2', color:'#22c55e'},
+          {score:'6分', crit:'能耗强度 ≤ 基准值（行业均值）', color:'#eab308'},
+          {score:'4分', crit:'能耗强度 ≤ 基准值×1.1', color:'#f97316'},
+          {score:'2分', crit:'能耗强度 > 基准值×1.1', color:'#dc2626'},
+        ]
+      },
+      {
+        id:'ec2', name:'碳排放强度', max:10,
+        subtitle:'单位产值温室气体排放量（tCO₂e/万元）',
+        basis:['GB/T 32150-2015','GB/T 36132-2025'],
+        note:'碳排放包括范围一（直接排放）和范围二（外购电力间接排放）；请填写年度碳排放总量（来自碳核查报告）。',
+        dataFields:[
+          {id:'ec2_emission', label:'年度碳排放总量（Scope1+2）', unit:'tCO₂e/年', placeholder:'如：2100'},
+          {id:'ec2_output', label:'年工业总产值', unit:'万元', ref:'f_output', readonly:true}
+        ],
+        formula:function(values, industry) {
+          const emission = parseFloat(values['ec2_emission']) || 0;
+          const output = parseFloat(values['f_output']) || 0;
+          if (output <= 0) return {calculated:null, score:0, level:'pending'};
+          const intensity = emission / output;
+          const bm = INDUSTRY_BENCHMARKS[industry]?.carbonIntensity || INDUSTRY_BENCHMARKS.other.carbonIntensity;
+          let score = 0;
+          if (intensity <= 0) score = 0;
+          else if (intensity <= bm.leader) score = 10;
+          else if (intensity <= bm.leader * 1.2) score = 8;
+          else if (intensity <= bm.basis) score = 6;
+          else if (intensity <= bm.basis * 1.1) score = 4;
+          else score = 2;
+          let level = 'poor';
+          if (intensity <= bm.leader) level = 'good';
+          else if (intensity <= bm.basis) level = 'medium';
+          return {calculated:intensity.toFixed(3), score, level, benchmark:bm};
+        },
+        scoringLevels:[
+          {score:'10分', crit:'碳强度 ≤ 引领值', color:'#16a34a'},
+          {score:'8分', crit:'碳强度 ≤ 引领值×1.2', color:'#22c55e'},
+          {score:'6分', crit:'碳强度 ≤ 基准值', color:'#eab308'},
+          {score:'4分', crit:'碳强度 ≤ 基准值×1.1', color:'#f97316'},
+          {score:'2分', crit:'碳强度 > 基准值×1.1', color:'#dc2626'},
+        ]
+      },
+      {
+        id:'ec3', name:'可再生能源利用率', max:8,
+        subtitle:'可再生能源占总能源消耗比例（%）',
+        basis:['可再生能源法','GB/T 36132-2025'],
+        note:'可再生能源包括光伏、风电、生物质能等；外购绿电/绿证可计入；请填写可再生能源消耗量和总能源消耗量。',
+        dataFields:[
+          {id:'ec3_renewable', label:'可再生能源消耗量（折标煤）', unit:'tce/年', placeholder:'如：120'},
+          {id:'ec3_total', label:'能源消耗总量（折标煤）', unit:'tce/年', placeholder:'如：850'}
+        ],
+        formula:function(values, industry) {
+          const renewable = parseFloat(values['ec3_renewable']) || 0;
+          const total = parseFloat(values['ec3_total']) || 0;
+          if (total <= 0) return {calculated:null, score:0, level:'pending'};
+          const rate = (renewable / total) * 100;
+          let score = 0;
+          if (rate >= 30) score = 8;
+          else if (rate >= 15) score = 6;
+          else if (rate >= 5) score = 4;
+          else if (rate > 0) score = 2;
+          else score = 0;
+          let level = 'poor';
+          if (rate >= 15) level = 'good';
+          else if (rate >= 5) level = 'medium';
+          return {calculated:rate.toFixed(1), score, level};
+        },
+        scoringLevels:[
+          {score:'8分', crit:'可再生能源利用率 ≥ 30%', color:'#16a34a'},
+          {score:'6分', crit:'可再生能源利用率 15%~30%', color:'#22c55e'},
+          {score:'4分', crit:'可再生能源利用率 5%~15%', color:'#eab308'},
+          {score:'2分', crit:'可再生能源利用率 < 5%', color:'#f97316'},
+          {score:'0分', crit:'无可再生能源利用', color:'#dc2626'},
+        ]
+      },
+      {
+        id:'ec4', name:'温室气体核算与报告', max:7,
+        subtitle:'GHG清单建立与信息披露水平',
+        basis:['GB/T 32150','ISO 14064-1','GB/T 36132-2025'],
+        note:'请选择企业碳核算和报告的实际情况，系统将自动评定分数。',
+        dataFields:[
+          {id:'ec4_level', label:'碳核算与报告等级', type:'select', options:[
+            {value:'5', text:'建立完整GHG清单+第三方核查+产品碳足迹+LCA报告'},
+            {value:'4', text:'年度GHG清单完整+第三方核查'},
+            {value:'3', text:'建立GHG清单+年度碳核算报告'},
+            {value:'2', text:'开展基本碳核算，方法学不完善'},
+            {value:'1', text:'有核算计划，尚未实施'},
+            {value:'0', text:'未开展碳排放核算'}
+          ]}
+        ],
+        formula:function(values, industry) {
+          const level = parseInt(values['ec4_level']) || 0;
+          return {calculated:level, score:level, level:level>=4?'good':level>=2?'medium':'poor'};
+        },
+        scoringLevels:[
+          {score:'7分', crit:'完整GHG清单+第三方核查+LCA报告', color:'#16a34a'},
+          {score:'5分', crit:'年度GHG清单+第三方核查', color:'#22c55e'},
+          {score:'3分', crit:'GHG清单+年度碳核算报告', color:'#eab308'},
+          {score:'1-2分', crit:'基本核算，方法学不完善', color:'#f97316'},
+          {score:'0分', crit:'未开展碳排放核算', color:'#dc2626'},
+        ]
+      }
+    ]
+  },
+  /* ==================== 资源高效化 25分 ==================== */
+  {
+    id:'resource', name:'资源高效化', color:'#2563eb', bg:'#dbeafe', maxScore:25,
+    desc:'评价企业水资源利用效率、一般工业固废与危险废物管理水平',
+    items:[
+      {
+        id:'ri1', name:'取水强度', max:8,
+        subtitle:'单位产值取水量（m³/万元）',
+        basis:['GB/T 18916系列','GB/T 36132-2025'],
+        note:'取水量包括市政供水、地下水、地表水；中水/雨水回用量可冲抵；请填写年度取水总量和工业总产值。',
+        dataFields:[
+          {id:'ri1_water', label:'年度取水总量', unit:'m³/年', placeholder:'如：3000'},
+          {id:'ri1_output', label:'年工业总产值', unit:'万元', ref:'f_output', readonly:true}
+        ],
+        formula:function(values, industry) {
+          const water = parseFloat(values['ri1_water']) || 0;
+          const output = parseFloat(values['f_output']) || 0;
+          if (output <= 0) return {calculated:null, score:0, level:'pending'};
+          const intensity = water / output;
+          const bm = INDUSTRY_BENCHMARKS[industry]?.waterIntensity || INDUSTRY_BENCHMARKS.other.waterIntensity;
+          let score = 0;
+          if (intensity <= 0) score = 0;
+          else if (intensity <= bm.leader) score = 8;
+          else if (intensity <= bm.leader * 1.2) score = 6;
+          else if (intensity <= bm.basis) score = 4;
+          else if (intensity <= bm.basis * 1.1) score = 2;
+          else score = 1;
+          let level = 'poor';
+          if (intensity <= bm.leader) level = 'good';
+          else if (intensity <= bm.basis) level = 'medium';
+          return {calculated:intensity.toFixed(2), score, level, benchmark:bm};
+        },
+        scoringLevels:[
+          {score:'8分', crit:'取水强度 ≤ 引领值（行业前5%）', color:'#16a34a'},
+          {score:'6分', crit:'取水强度 ≤ 引领值×1.2', color:'#22c55e'},
+          {score:'4分', crit:'取水强度 ≤ 基准值', color:'#eab308'},
+          {score:'2-3分', crit:'取水强度 ≤ 基准值×1.1', color:'#f97316'},
+          {score:'0-1分', crit:'取水强度 > 基准值×1.1', color:'#dc2626'},
+        ]
+      },
+      {
+        id:'ri2', name:'一般工业固废综合利用率', max:7,
+        subtitle:'一般工业固体废物资源化利用率（%）',
+        basis:['固体废物污染环境防治法','GB/T 36132-2025'],
+        note:'一般工业固废包括金属废料、废塑料、废纸等；请填写年产生量和资源化利用量。',
+        dataFields:[
+          {id:'ri2_generated', label:'一般固废年产生量', unit:'t/年', placeholder:'如：500'},
+          {id:'ri2_recycled', label:'资源化利用量', unit:'t/年', placeholder:'如：450'}
+        ],
+        formula:function(values, industry) {
+          const generated = parseFloat(values['ri2_generated']) || 0;
+          const recycled = parseFloat(values['ri2_recycled']) || 0;
+          if (generated <= 0) return {calculated:null, score:0, level:'pending'};
+          const rate = (recycled / generated) * 100;
+          let score = 0;
+          if (rate >= 95) score = 7;
+          else if (rate >= 80) score = 5;
+          else if (rate >= 60) score = 3;
+          else if (rate >= 40) score = 1;
+          else score = 0;
+          let level = 'poor';
+          if (rate >= 80) level = 'good';
+          else if (rate >= 60) level = 'medium';
+          return {calculated:rate.toFixed(1), score, level};
+        },
+        scoringLevels:[
+          {score:'7分', crit:'综合利用率 ≥ 95%', color:'#16a34a'},
+          {score:'5分', crit:'综合利用率 80%~95%', color:'#22c55e'},
+          {score:'3分', crit:'综合利用率 60%~80%', color:'#eab308'},
+          {score:'1-2分', crit:'综合利用率 40%~60%', color:'#f97316'},
+          {score:'0分', crit:'综合利用率 < 40%', color:'#dc2626'},
+        ]
+      },
+      {
+        id:'ri3', name:'危险废物规范管理', max:6,
+        subtitle:'危险废物规范化管理与合规处置',
+        basis:['危险废物经营许可证管理办法','GB 18597-2023','GB/T 36132-2025'],
+        note:'危废包括废矿物油、废有机溶剂等；必须委托有危废经营许可证单位处置；请选择管理等级。',
+        dataFields:[
+          {id:'ri3_level', label:'危废管理等级', type:'select', options:[
+            {value:'6', text:'管理计划备案+台账完整+联单100%合规+贮存设施规范+近三年无违规'},
+            {value:'4', text:'危废规范化管理达标+台账较完整+联单合规+贮存设施基本规范'},
+            {value:'2', text:'危废合规处置+有管理计划+台账存在轻微缺漏'},
+            {value:'1', text:'危废处置基本合规，台账不完整'},
+            {value:'0', text:'危废违规处置/无证转移/台账缺失'}
+          ]}
+        ],
+        formula:function(values, industry) {
+          const level = parseInt(values['ri3_level']) || 0;
+          return {calculated:level, score:level, level:level>=4?'good':level>=2?'medium':'poor'};
+        },
+        scoringLevels:[
+          {score:'6分', crit:'管理计划备案+台账完整+联单100%合规', color:'#16a34a'},
+          {score:'4分', crit:'规范化管理达标+台账较完整', color:'#22c55e'},
+          {score:'2分', crit:'合规处置+有管理计划', color:'#eab308'},
+          {score:'1分', crit:'基本合规，台账不完整', color:'#f97316'},
+          {score:'0分', crit:'违规处置/无证转移', color:'#dc2626'},
+        ]
+      },
+      {
+        id:'ri4', name:'绿色物料使用率', max:4,
+        subtitle:'主要原材料中绿色物料占比（%）',
+        basis:['绿色采购标准','GB/T 36132-2025'],
+        note:'绿色物料包括可再生材料、可降解材料、低环境冲击材料等；请填写主要原料总用量和绿色物料用量。',
+        dataFields:[
+          {id:'ri4_total', label:'主要原料总用量', unit:'t/年', placeholder:'如：2000'},
+          {id:'ri4_green', label:'绿色物料用量', unit:'t/年', placeholder:'如：600'}
+        ],
+        formula:function(values, industry) {
+          const total = parseFloat(values['ri4_total']) || 0;
+          const green = parseFloat(values['ri4_green']) || 0;
+          if (total <= 0) return {calculated:null, score:0, level:'pending'};
+          const rate = (green / total) * 100;
+          let score = 0;
+          if (rate >= 80) score = 4;
+          else if (rate >= 50) score = 3;
+          else if (rate >= 20) score = 2;
+          else if (rate > 0) score = 1;
+          else score = 0;
+          let level = 'poor';
+          if (rate >= 50) level = 'good';
+          else if (rate >= 20) level = 'medium';
+          return {calculated:rate.toFixed(1), score, level};
+        },
+        scoringLevels:[
+          {score:'4分', crit:'绿色物料使用率 ≥ 80%', color:'#16a34a'},
+          {score:'3分', crit:'绿色物料使用率 50%~80%', color:'#22c55e'},
+          {score:'2分', crit:'绿色物料使用率 20%~50%', color:'#eab308'},
+          {score:'1分', crit:'绿色物料使用率 < 20%', color:'#f97316'},
+          {score:'0分', crit:'无绿色物料使用', color:'#dc2626'},
+        ]
+      }
+    ]
+  },
+  /* ==================== 生产洁净化 20分 ==================== */
+  {
+    id:'clean', name:'生产洁净化', color:'#d97706', bg:'#fef3c7', maxScore:20,
+    desc:'评价企业废气、废水污染物排放强度与治理水平',
+    items:[
+      {
+        id:'cl1', name:'大气污染物排放强度', max:7,
+        subtitle:'VOCs排放强度（kg/万元）',
+        basis:['GB 16297','排污许可证','GB/T 36132-2025'],
+        note:'大气污染物包括VOCs、NOx、颗粒物；请填写年度VOCs排放总量和工业总产值。',
+        dataFields:[
+          {id:'cl1_vocs', label:'年度VOCs排放总量', unit:'kg/年', placeholder:'如：85'},
+          {id:'cl1_output', label:'年工业总产值', unit:'万元', ref:'f_output', readonly:true}
+        ],
+        formula:function(values, industry) {
+          const vocs = parseFloat(values['cl1_vocs']) || 0;
+          const output = parseFloat(values['f_output']) || 0;
+          if (output <= 0) return {calculated:null, score:0, level:'pending'};
+          const intensity = vocs / output;
+          const bm = INDUSTRY_BENCHMARKS[industry]?.vocsIntensity || INDUSTRY_BENCHMARKS.other.vocsIntensity;
+          let score = 0;
+          if (intensity <= 0) score = 0;
+          else if (intensity <= bm.leader) score = 7;
+          else if (intensity <= bm.leader * 1.2) score = 5;
+          else if (intensity <= bm.basis) score = 3;
+          else if (intensity <= bm.basis * 1.1) score = 1;
+          else score = 0;
+          let level = 'poor';
+          if (intensity <= bm.leader) level = 'good';
+          else if (intensity <= bm.basis) level = 'medium';
+          return {calculated:intensity.toFixed(4), score, level, benchmark:bm};
+        },
+        scoringLevels:[
+          {score:'7分', crit:'VOCs排放强度 ≤ 引领值', color:'#16a34a'},
+          {score:'5分', crit:'VOCs排放强度 ≤ 引领值×1.2', color:'#22c55e'},
+          {score:'3分', crit:'VOCs排放强度 ≤ 基准值', color:'#eab308'},
+          {score:'1-2分', crit:'VOCs排放强度 ≤ 基准值×1.1', color:'#f97316'},
+          {score:'0分', crit:'VOCs排放强度 > 基准值×1.1', color:'#dc2626'},
+        ]
+      },
+      {
+        id:'cl2', name:'水污染物排放强度', max:7,
+        subtitle:'COD排放强度（kg/万元）',
+        basis:['GB 8978','排污许可证','GB/T 36132-2025'],
+        note:'水污染物包括COD、氨氮等；请填写年度COD排放总量和工业总产值。',
+        dataFields:[
+          {id:'cl2_cod', label:'年度COD排放总量', unit:'kg/年', placeholder:'如：45'},
+          {id:'cl2_output', label:'年工业总产值', unit:'万元', ref:'f_output', readonly:true}
+        ],
+        formula:function(values, industry) {
+          const cod = parseFloat(values['cl2_cod']) || 0;
+          const output = parseFloat(values['f_output']) || 0;
+          if (output <= 0) return {calculated:null, score:0, level:'pending'};
+          const intensity = cod / output;
+          const bm = INDUSTRY_BENCHMARKS[industry]?.codIntensity || INDUSTRY_BENCHMARKS.other.codIntensity;
+          let score = 0;
+          if (intensity <= 0) score = 0;
+          else if (intensity <= bm.leader) score = 7;
+          else if (intensity <= bm.leader * 1.2) score = 5;
+          else if (intensity <= bm.basis) score = 3;
+          else if (intensity <= bm.basis * 1.1) score = 1;
+          else score = 0;
+          let level = 'poor';
+          if (intensity <= bm.leader) level = 'good';
+          else if (intensity <= bm.basis) level = 'medium';
+          return {calculated:intensity.toFixed(4), score, level, benchmark:bm};
+        },
+        scoringLevels:[
+          {score:'7分', crit:'COD排放强度 ≤ 引领值', color:'#16a34a'},
+          {score:'5分', crit:'COD排放强度 ≤ 引领值×1.2', color:'#22c55e'},
+          {score:'3分', crit:'COD排放强度 ≤ 基准值', color:'#eab308'},
+          {score:'1-2分', crit:'COD排放强度 ≤ 基准值×1.1', color:'#f97316'},
+          {score:'0分', crit:'COD排放强度 > 基准值×1.1', color:'#dc2626'},
+        ]
+      },
+      {
+        id:'cl3', name:'废气治理设施运行', max:3,
+        subtitle:'废气末端治理设施配置与运行管理水平',
+        basis:['大气污染防治法','排污许可证','GB/T 36132-2025'],
+        note:'请选择废气治理设施的实际情况。',
+        dataFields:[
+          {id:'cl3_level', label:'废气治理设施等级', type:'select', options:[
+            {value:'3', text:'技术路线匹配+设施100%同步运行+定期维护+运维台账完整+人员持证'},
+            {value:'2', text:'废气治理设施配套齐全+运行记录基本完整+定期维护'},
+            {value:'1', text:'有废气治理设施但运行不稳定或维护记录不完整'},
+            {value:'0', text:'废气治理设施缺失或长期停运'}
+          ]}
+        ],
+        formula:function(values, industry) {
+          const level = parseInt(values['cl3_level']) || 0;
+          return {calculated:level, score:level, level:level>=2?'good':level>=1?'medium':'poor'};
+        },
+        scoringLevels:[
+          {score:'3分', crit:'设施配套齐全+运行稳定+台账规范', color:'#16a34a'},
+          {score:'2分', crit:'设施配套齐全+运行记录基本完整', color:'#22c55e'},
+          {score:'1分', crit:'有设施但运行不稳定或记录不完整', color:'#f97316'},
+          {score:'0分', crit:'设施缺失或长期停运', color:'#dc2626'},
+        ]
+      },
+      {
+        id:'cl4', name:'废水治理设施运行', max:3,
+        subtitle:'废水处理设施配置与运行管理水平',
+        basis:['水污染防治法','排污许可证','GB/T 36132-2025'],
+        note:'请选择废水治理设施的实际情况。',
+        dataFields:[
+          {id:'cl4_level', label:'废水治理设施等级', type:'select', options:[
+            {value:'3', text:'工艺与污染物特点高度匹配+出水稳定达标+定期自行监测+运维台账完整规范'},
+            {value:'2', text:'废水处理设施运行正常+出水稳定达标+有监测运维记录'},
+            {value:'1', text:'有废水处理设施但运行不稳定或运维记录不完整'},
+            {value:'0', text:'废水处理设施缺失或出水长期超标'}
+          ]}
+        ],
+        formula:function(values, industry) {
+          const level = parseInt(values['cl4_level']) || 0;
+          return {calculated:level, score:level, level:level>=2?'good':level>=1?'medium':'poor'};
+        },
+        scoringLevels:[
+          {score:'3分', crit:'工艺匹配+出水稳定达标+台账规范', color:'#16a34a'},
+          {score:'2分', crit:'设施运行正常+出水稳定达标', color:'#22c55e'},
+          {score:'1分', crit:'有设施但运行不稳定或记录不完整', color:'#f97316'},
+          {score:'0分', crit:'设施缺失或出水长期超标', color:'#dc2626'},
+        ]
+      }
+    ]
+  },
+  /* ==================== 产品绿色化 12分 ==================== */
+  {
+    id:'product', name:'产品绿色化', color:'#7c3aed', bg:'#ede9fe', maxScore:12,
+    desc:'评价产品绿色设计水平、有害物质管控及绿色认证情况',
+    items:[
+      {
+        id:'pg1', name:'产品生态设计', max:4,
+        subtitle:'产品绿色设计（生态设计）实施水平',
+        basis:['GB/T 32161','GB/T 24256','ISO 14006','GB/T 36132-2025'],
+        note:'请选择产品生态设计的实施等级。',
+        dataFields:[
+          {id:'pg1_level', label:'生态设计等级', type:'select', options:[
+            {value:'4', text:'建立生态设计程序+主要产品开展LCA+工信部生态设计产品评价/C2C认证'},
+            {value:'3', text:'已开展产品LCA+形成内部报告+产品设计中纳入可维修性和材料回收'},
+            {value:'2', text:'建立生态设计管理程序+有设计审查记录+部分产品应用生态设计'},
+            {value:'1', text:'生态设计处于起步阶段'},
+            {value:'0', text:'未开展生态设计'}
+          ]}
+        ],
+        formula:function(values, industry) {
+          const level = parseInt(values['pg1_level']) || 0;
+          return {calculated:level, score:level, level:level>=3?'good':level>=2?'medium':'poor'};
+        },
+        scoringLevels:[
+          {score:'4分', crit:'建立程序+LCA+生态设计产品评价', color:'#16a34a'},
+          {score:'3分', crit:'开展产品LCA+可维修性设计', color:'#22c55e'},
+          {score:'2分', crit:'建立程序+部分产品应用', color:'#eab308'},
+          {score:'1分', crit:'起步阶段', color:'#f97316'},
+          {score:'0分', crit:'未开展', color:'#dc2626'},
+        ]
+      },
+      {
+        id:'pg2', name:'绿色产品认证', max:4,
+        subtitle:'绿色/低碳产品认证与标志覆盖',
+        basis:['国家绿色产品认证目录','中国环境标志（十环）','GB/T 36132-2025'],
+        note:'请选择绿色产品认证的覆盖情况。',
+        dataFields:[
+          {id:'pg2_level', label:'绿色认证等级', type:'select', options:[
+            {value:'4', text:'主要产品（≥60%）获得国家绿色产品认证/十环认证+有效期内无撤销'},
+            {value:'3', text:'部分产品（30%~60%）获得绿色认证+认证覆盖率持续提升'},
+            {value:'2', text:'少量产品（<30%）有绿色认证+或获节能/节水认证'},
+            {value:'1', text:'了解认证要求，有申请计划'},
+            {value:'0', text:'无任何绿色产品认证'}
+          ]}
+        ],
+        formula:function(values, industry) {
+          const level = parseInt(values['pg2_level']) || 0;
+          return {calculated:level, score:level, level:level>=3?'good':level>=2?'medium':'poor'};
+        },
+        scoringLevels:[
+          {score:'4分', crit:'主要产品（≥60%）获绿色认证', color:'#16a34a'},
+          {score:'3分', crit:'部分产品（30%~60%）获认证', color:'#22c55e'},
+          {score:'2分', crit:'少量产品（<30%）有认证', color:'#eab308'},
+          {score:'1分', crit:'有申请计划', color:'#f97316'},
+          {score:'0分', crit:'无任何认证', color:'#dc2626'},
+        ]
+      },
+      {
+        id:'pg3', name:'有害物质管控', max:4,
+        subtitle:'产品中有害物质限制与RoHS/REACH符合性',
+        basis:['RoHS指令','REACH法规','GB/T 26572','IECQ QC 080000','GB/T 36132-2025'],
+        note:'请选择有害物质管控的实际情况。',
+        dataFields:[
+          {id:'pg3_level', label:'有害物质管控等级', type:'select', options:[
+            {value:'4', text:'RoHS 6项均低于限值+SVHC符合REACH+建立QC 080000体系并认证+定期CNAS检测'},
+            {value:'3', text:'RoHS/REACH符合性检测报告完整（近两年）+有害物质管控体系较完善'},
+            {value:'2', text:'产品符合RoHS要求+有检测报告+管控基本规范'},
+            {value:'1', text:'开展过检测，部分产品符合，部分待整改'},
+            {value:'0', text:'未开展有害物质检测或存在超标'}
+          ]}
+        ],
+        formula:function(values, industry) {
+          const level = parseInt(values['pg3_level']) || 0;
+          return {calculated:level, score:level, level:level>=3?'good':level>=2?'medium':'poor'};
+        },
+        scoringLevels:[
+          {score:'4分', crit:'RoHS符合+SVHC符合+QC 080000认证', color:'#16a34a'},
+          {score:'3分', crit:'RoHS/REACH报告完整+体系较完善', color:'#22c55e'},
+          {score:'2分', crit:'符合RoHS+有检测报告', color:'#eab308'},
+          {score:'1分', crit:'部分符合，部分待整改', color:'#f97316'},
+          {score:'0分', crit:'未检测或存在超标', color:'#dc2626'},
+        ]
+      }
+    ]
+  },
+  /* ==================== 用地集约化 8分 ==================== */
+  {
+    id:'land', name:'用地集约化', color:'#dc2626', bg:'#fee2e2', maxScore:8,
+    desc:'评价企业土地利用效率与空间布局合理性',
+    items:[
+      {
+        id:'ld1', name:'工厂容积率', max:3,
+        subtitle:'建筑面积与厂区用地面积之比',
+        basis:['GB/T 36132-2025 附录A','工业项目建设用地控制指标'],
+        note:'容积率=总建筑面积÷厂区用地面积（ha）；请填写厂区总建筑面积和用地面积。',
+        dataFields:[
+          {id:'ld1_building', label:'厂区总建筑面积', unit:'m²', placeholder:'如：25000'},
+          {id:'ld1_land', label:'厂区用地面积', unit:'亩', placeholder:'如：50'}
+        ],
+        formula:function(values, industry) {
+          const building = parseFloat(values['ld1_building']) || 0;
+          const land = parseFloat(values['ld1_land']) || 0;
+          if (land <= 0) return {calculated:null, score:0, level:'pending'};
+          const landM2 = land * 666.67; // 亩转平方米
+          const floorAreaRatio = building / landM2;
+          // 容积率≥0.8为基础，≥1.6为引领
+          const basis = 0.8, leader = 1.6;
+          let score = 0;
+          if (floorAreaRatio >= leader) score = 3;
+          else if (floorAreaRatio >= basis * 1.5) score = 2;
+          else if (floorAreaRatio >= basis) score = 1;
+          else score = 0;
+          let level = 'poor';
+          if (floorAreaRatio >= leader) level = 'good';
+          else if (floorAreaRatio >= basis) level = 'medium';
+          return {calculated:floorAreaRatio.toFixed(2), score, level};
+        },
+        scoringLevels:[
+          {score:'3分', crit:'容积率 ≥ 1.6（达控制指标2倍及以上）', color:'#16a34a'},
+          {score:'2分', crit:'容积率 1.2~1.6（达控制指标1.5~2倍）', color:'#22c55e'},
+          {score:'1分', crit:'容积率 0.8~1.2（达到控制指标要求）', color:'#eab308'},
+          {score:'0分', crit:'容积率 < 0.8（低于控制指标）', color:'#dc2626'},
+        ]
+      },
+      {
+        id:'ld2', name:'单位用地面积产值', max:3,
+        subtitle:'工业总产值与厂区用地面积之比（万元/亩）',
+        basis:['GB/T 36132-2025 附录A','工业项目建设用地控制指标'],
+        note:'请填写工业总产值和厂区用地面积。',
+        dataFields:[
+          {id:'ld2_output', label:'年工业总产值', unit:'万元', ref:'f_output', readonly:true},
+          {id:'ld2_land', label:'厂区用地面积', unit:'亩', placeholder:'如：50'}
+        ],
+        formula:function(values, industry) {
+          const output = parseFloat(values['f_output']) || 0;
+          const land = parseFloat(values['ld2_land']) || 0;
+          if (land <= 0) return {calculated:null, score:0, level:'pending'};
+          const intensity = output / land;
+          // 不同行业参考值不同，这里用简化：≥200万/亩为优秀，≥100为良好，≥60为达标
+          let score = 0;
+          if (intensity >= 200) score = 3;
+          else if (intensity >= 100) score = 2;
+          else if (intensity >= 60) score = 1;
+          else score = 0;
+          let level = 'poor';
+          if (intensity >= 100) level = 'good';
+          else if (intensity >= 60) level = 'medium';
+          return {calculated:intensity.toFixed(1), score, level};
+        },
+        scoringLevels:[
+          {score:'3分', crit:'单位用地面积产值 ≥ 200万元/亩', color:'#16a34a'},
+          {score:'2分', crit:'单位用地面积产值 100~200万元/亩', color:'#22c55e'},
+          {score:'1分', crit:'单位用地面积产值 60~100万元/亩', color:'#eab308'},
+          {score:'0分', crit:'单位用地面积产值 < 60万元/亩', color:'#dc2626'},
+        ]
+      },
+      {
+        id:'ld3', name:'厂区空间布局', max:2,
+        subtitle:'厂区总平面布局与功能分区合理性',
+        basis:['GB 50187','GB 50016','GB/T 36132-2025'],
+        note:'请选择厂区空间布局的实际情况。',
+        dataFields:[
+          {id:'ld3_level', label:'厂区布局等级', type:'select', options:[
+            {value:'2', text:'功能分区科学合理+物流动线优化+危险品仓库独立设置+绿化率≥15%'},
+            {value:'1', text:'功能分区基本合理+符合国标要求+安全距离达标+绿化率10%~15%'},
+            {value:'0', text:'厂区布局混乱+存在安全隐患+绿化率低'}
+          ]}
+        ],
+        formula:function(values, industry) {
+          const level = parseInt(values['ld3_level']) || 0;
+          return {calculated:level, score:level, level:level>=1?'good':'poor'};
+        },
+        scoringLevels:[
+          {score:'2分', crit:'功能分区科学+物流优化+绿化率≥15%', color:'#16a34a'},
+          {score:'1分', crit:'功能分区基本合理+符合国标+绿化率10%~15%', color:'#22c55e'},
+          {score:'0分', crit:'布局混乱+存在安全隐患', color:'#dc2626'},
+        ]
+      }
+    ]
+  }
+];
+
+const TOTAL_MAX = CATEGORIES.reduce((s,c)=>s+c.maxScore, 0);
+let currentPage = 0;
+const scores = {};
+const inputValues = {};
+
+/* ===== 初始化 ===== */
+function initPages() {
+  CATEGORIES.forEach((cat, ci) => {
+    const container = document.getElementById('page' + (ci+1));
+    let html = `
+      <div class="card" style="margin-bottom:8px;padding:14px 20px;background:${cat.bg};border-radius:10px;">
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:600;color:${cat.color}">${cat.name}（满分 ${cat.maxScore} 分）</div>
+            <div style="font-size:13px;color:#555;margin-top:4px">${cat.desc}</div>
+          </div>
+          <div style="font-size:22px;font-weight:700;color:${cat.color}" id="cat_score_${cat.id}">0</div>
+          <div style="font-size:13px;color:#888;align-self:flex-end">/ ${cat.maxScore}</div>
+        </div>
+      </div>`;
+
+    cat.items.forEach((item, ii) => {
+      const detailId = 'detail_' + item.id;
+      const toggleId = 'toggle_' + item.id;
+      
+      // 数据输入HTML
+      let inputsHtml = '';
+      item.dataFields.forEach(field => {
+        if (field.type === 'select') {
+          inputsHtml += `
+            <div class="input-field" style="grid-column:1/-1">
+              <label>${field.label}</label>
+              <select id="${field.id}" onchange="recalculateItem('${item.id}')" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;">
+                <option value="">请选择</option>
+                ${field.options.map(opt=>`<option value="${opt.value}">${opt.text}</option>`).join('')}
+              </select>
+            </div>`;
+        } else {
+          inputsHtml += `
+            <div class="input-field">
+              <label>${field.label}</label>
+              <input type="number" id="${field.id}" placeholder="${field.placeholder||''}"
+                ${field.readonly?'readonly style="background:#f3f4f6"':''}
+                oninput="recalculateItem('${item.id}')">
+            </div>`;
+        }
+      });
+      
+      // 评分标准表格（详情用）
+      let scoringTable = item.scoringLevels.map(s=>`
+        <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f3f4f6">
+          <span style="font-weight:600;color:${s.color};min-width:50px">${s.score}</span>
+          <span style="color:#555;font-size:12px">${s.crit}</span>
+        </div>`).join('');
+
+      // 行业基准参考（如果有）
+      let benchmarkHtml = '';
+      if (item.formula.toString().includes('benchmark')) {
+        benchmarkHtml = `
+          <div class="benchmark-ref">
+            <div class="title">📊 行业基准参考值（可点击行业信息查看）</div>
+            <div class="row"><span>基准值（行业均值）</span><span class="val" id="bm_basis_${item.id}">—</span></div>
+            <div class="row"><span>引领值（行业前5%）</span><span class="val" id="bm_leader_${item.id}">—</span></div>
+          </div>`;
+      }
+
+      // 依据标签
+      let basisHtml = `<div class="detail-section">
+        <div class="detail-label">评价依据</div>
+        <div>${item.basis.map(b=>`<span class="basis-tag">${b}</span>`).join('')}</div>
+      </div>`;
+
+      // 注意事项
+      let noteHtml = item.note ? `<div class="detail-section"><div class="note-box">⚠️ ${item.note}</div></div>` : '';
+
+      html += `
+        <div class="ind-block">
+          <div class="ind-header" onclick="toggleDetail('${item.id}')">
+            <button class="ind-toggle" id="${toggleId}">▶</button>
+            <div class="ind-title-wrap">
+              <div class="ind-title">${item.name}</div>
+              <div class="ind-subtitle">${item.subtitle}</div>
+            </div>
+            <div class="ind-score-display">
+              <div class="score-value" id="score_val_${item.id}" style="color:var(--gray-400)">—</div>
+              <div class="score-label">自动得分</div>
+              <div class="score-max">/ ${item.max}</div>
+            </div>
+          </div>
+          
+          <div class="ind-inputs">
+            <div class="input-row">${inputsHtml}</div>
+            
+            <div class="calc-result" id="calc_result_${item.id}" style="display:none">
+              <div class="calc-item">
+                <div class="calc-val" id="calc_val_${item.id}">—</div>
+                <div class="calc-name">计算结果</div>
+              </div>
+              <div id="calc_bench_${item.id}"></div>
+              <div class="vs-benchmark" id="vs_bench_${item.id}">—</div>
+            </div>
+            
+            <div class="auto-score">
+              <div class="auto-score-label">自动评分</div>
+              <div class="auto-score-value" id="auto_score_${item.id}" style="color:var(--gray-400)">— <span class="auto-score-max">/ ${item.max}分</span></div>
+            </div>
+          </div>
+          
+          <div class="ind-detail" id="${detailId}">
+            <hr style="border:none;border-top:1px solid var(--gray-100);margin-bottom:12px">
+            ${benchmarkHtml}
+            <div class="detail-section">
+              <div class="detail-label">评分标准</div>
+              ${scoringTable}
+            </div>
+            ${basisHtml}
+            ${noteHtml}
+          </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+  });
+}
+
+function toggleDetail(itemId) {
+  const detail = document.getElementById('detail_' + itemId);
+  const toggle = document.getElementById('toggle_' + itemId);
+  const isOpen = detail.classList.toggle('open');
+  toggle.classList.toggle('open', isOpen);
+  toggle.textContent = isOpen ? '▼' : '▶';
+}
+
+/* ===== 重新计算单个指标 ===== */
+function recalculateItem(itemId) {
+  // 收集所有输入值
+  let cat = null, item = null;
+  for (const c of CATEGORIES) {
+    const found = c.items.find(i => i.id === itemId);
+    if (found) { cat = c; item = found; break; }
+  }
+  if (!item) return;
+
+  // 获取各字段值
+  const industry = document.getElementById('f_industry').value || 'other';
+  item.dataFields.forEach(field => {
+    const el = document.getElementById(field.id);
+    if (el) {
+      // 如果是引用f_output的字段，同步值
+      if (field.ref === 'f_output') {
+        inputValues[field.id] = document.getElementById(field.ref)?.value || '';
+        if (el.value !== inputValues[field.id]) el.value = inputValues[field.id];
+      } else {
+        inputValues[field.id] = el.value;
+      }
+    }
+  });
+
+  // 调用公式计算
+  const result = item.formula(inputValues, industry);
+  scores[itemId] = result.score || 0;
+
+  // 更新显示
+  updateItemDisplay(item, result, cat);
+  updateCategoryScore(cat.id);
+}
+
+function recalculateAll() {
+  // 同步产值到所有引用字段
+  const output = document.getElementById('f_output')?.value || '';
+  CATEGORIES.forEach(cat => {
+    cat.items.forEach(item => {
+      item.dataFields.forEach(field => {
+        if (field.ref === 'f_output') {
+          const el = document.getElementById(field.id);
+          if (el && el.value !== output) {
+            el.value = output;
+            inputValues[field.id] = output;
+          }
+        }
+      });
+      recalculateItem(item.id);
+    });
+  });
+  onIndustryChange();
+}
+
+function updateItemDisplay(item, result, cat) {
+  const scoreVal = document.getElementById('score_val_' + item.id);
+  const calcResult = document.getElementById('calc_result_' + item.id);
+  const calcVal = document.getElementById('calc_val_' + item.id);
+  const vsBench = document.getElementById('vs_bench_' + item.id);
+  const autoScore = document.getElementById('auto_score_' + item.id);
+  const bmBasis = document.getElementById('bm_basis_' + item.id);
+  const bmLeader = document.getElementById('bm_leader_' + item.id);
+
+  if (result.calculated !== null && result.calculated !== undefined) {
+    calcResult.style.display = 'flex';
+    calcVal.textContent = result.calculated + (item.unit || '');
+    
+    // 更新基准值显示
+    if (bmBasis && bmLeader && result.benchmark) {
+      bmBasis.textContent = result.benchmark.basis + (item.unit || '').split('/')[0] + '/万元';
+      bmLeader.textContent = result.benchmark.leader + (item.unit || '').split('/')[0] + '/万元';
+    }
+
+    // 更新vs基准显示
+    let vsText = '', vsClass = '';
+    if (result.level === 'good') {
+      vsText = '✓ 达到引领值';
+      vsClass = 'good';
+    } else if (result.level === 'medium') {
+      vsText = '○ 达到基准值';
+      vsClass = 'medium';
+    } else {
+      vsText = '✗ 未达基准值';
+      vsClass = 'poor';
+    }
+    vsBench.textContent = vsText;
+    vsBench.className = 'vs-benchmark ' + vsClass;
+
+    // 更新得分颜色
+    const colors = {good:'#16a34a', medium:'#d97706', poor:'#dc2626', pending:'#9ca3af'};
+    const color = colors[result.level] || colors.pending;
+    scoreVal.style.color = color;
+    scoreVal.textContent = result.score;
+    autoScore.innerHTML = `<span style="color:${color}">${result.score}</span> <span class="auto-score-max">/ ${item.max}分</span>`;
+  } else {
+    calcResult.style.display = 'none';
+    scoreVal.textContent = '—';
+    scoreVal.style.color = 'var(--gray-400)';
+    autoScore.innerHTML = `<span style="color:var(--gray-400)">—</span> <span class="auto-score-max">/ ${item.max}分</span>`;
+  }
+}
+
+function updateCategoryScore(catId) {
+  let cat = CATEGORIES.find(c => c.id === catId);
+  if (!cat) return;
+  const total = cat.items.reduce((s, i) => s + (scores[i.id] || 0), 0);
+  const el = document.getElementById('cat_score_' + catId);
+  if (el) el.textContent = total.toFixed(1);
+}
+
+/* ===== 导航 ===== */
+function goPage(n) {
+  if (n === 6) generateReport();
+  document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('active',i===n));
+  document.querySelectorAll('.step-item').forEach((s,i)=>{
+    s.classList.remove('active','done');
+    if (i===n) s.classList.add('active');
+    else if (i<n) s.classList.add('done');
+  });
+  currentPage = n;
+  updateNav();
+  window.scrollTo(0,0);
+}
+function nextPage() {
+  if (currentPage===0){
+    if(!document.getElementById('f_company').value.trim()){alert('请填写企业名称');return;}
+    if(!document.getElementById('f_industry').value){alert('请选择所属行业');return;}
+    if(!document.getElementById('f_output').value){alert('请填写工业总产值');return;}
+    recalculateAll();
+  }
+  if (currentPage<6) goPage(currentPage+1);
+}
+function prevPage() { if (currentPage>0) goPage(currentPage-1); }
+function updateNav() {
+  document.getElementById('prevBtn').style.visibility = currentPage===0?'hidden':'visible';
+  const isLast = currentPage===6;
+  document.getElementById('nextBtn').style.display = isLast?'none':'inline-flex';
+  document.getElementById('pdfBtn').style.display = isLast?'inline-flex':'none';
+  document.getElementById('progressLabel').textContent = `步骤 ${currentPage+1}/7`;
+  document.getElementById('progressFill').style.width = ((currentPage+1)/7*100)+'%';
+}
+
+/* ===== 报告生成 ===== */
+function getLevelInfo(pct) {
+  if (pct>=90) return {label:'国际先进',color:'#16a34a',bg:'#dcfce7',stars:'★★★★★'};
+  if (pct>=80) return {label:'国内领先',color:'#2563eb',bg:'#dbeafe',stars:'★★★★☆'};
+  if (pct>=70) return {label:'绿色工厂',color:'#d97706',bg:'#fef3c7',stars:'★★★☆☆'};
+  if (pct>=60) return {label:'达标级',color:'#7c3aed',bg:'#ede9fe',stars:'★★☆☆☆'};
+  return {label:'待提升',color:'#dc2626',bg:'#fee2e2',stars:'★☆☆☆☆'};
+}
+
+function generateReport() {
+  const company = document.getElementById('f_company').value||'（未填写）';
+  const year    = document.getElementById('f_year').value||'2025';
+  const industry= INDUSTRY_BENCHMARKS[document.getElementById('f_industry').value]?.name || '—';
+  const city    = document.getElementById('f_city').value||'—';
+  const evaluator=document.getElementById('f_evaluator').value||'—';
+  const output  = document.getElementById('f_output').value||'—';
+
+  const catScores = CATEGORIES.map(cat=>({
+    ...cat, actual: cat.items.reduce((s,i)=>s+(scores[i.id]||0),0)
+  }));
+  const total = catScores.reduce((s,c)=>s+c.actual,0);
+  const pct = total/TOTAL_MAX*100;
+  const level = getLevelInfo(pct);
+  const recs = generateRecs(catScores);
+
+  document.getElementById('report-content').innerHTML = `
+    <div class="card" id="rpt-header">
+      <div style="text-align:center;padding:16px 0 8px">
+        <div style="font-size:13px;color:#6b7280;margin-bottom:6px">绿色工厂综合评价报告</div>
+        <div style="font-size:20px;font-weight:700;color:#111827;margin-bottom:4px">${company}</div>
+        <div style="font-size:13px;color:#9ca3af">${year}年度 · ${industry} · ${city}</div>
+        <div style="font-size:12px;color:#9ca3af;margin-top:4px">评价人员：${evaluator} &nbsp;|&nbsp; 工业总产值：${output}万元 &nbsp;|&nbsp; 生成时间：${new Date().toLocaleDateString('zh-CN')}</div>
+      </div>
+      <hr style="border:none;border-top:1px solid #f3f4f6;margin:16px 0">
+      <div class="score-hero">
+        <div class="score-big" style="color:${level.color}">${total.toFixed(1)}</div>
+        <div class="score-label">总分（满分 ${TOTAL_MAX} 分）&nbsp;·&nbsp; 得分率 ${pct.toFixed(1)}%</div>
+        <div class="level-badge" style="background:${level.bg};color:${level.color}">${level.stars} &nbsp;${level.label}</div>
+      </div>
+    </div>
+
+    <div class="charts-grid" id="rpt-charts">
+      <div class="card" style="padding:16px">
+        <div class="card-title" style="font-size:13px;margin-bottom:12px">各维度得分雷达图</div>
+        <div style="position:relative;height:240px">
+          <canvas id="radarChart" role="img" aria-label="绿色工厂评价维度雷达图">雷达图</canvas>
+        </div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div class="card-title" style="font-size:13px;margin-bottom:12px">各维度得分率对比</div>
+        <div style="position:relative;height:240px">
+          <canvas id="barChart" role="img" aria-label="各维度得分率柱状图">柱状图</canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="rpt-detail">
+      <div class="card-title">📊 维度得分明细</div>
+      <div>
+        ${catScores.map(c=>{
+          const p=c.maxScore>0?(c.actual/c.maxScore*100):0;
+          return `<div class="cat-bar-row">
+            <div class="cat-label">${c.name}</div>
+            <div><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${p}%;background:${c.color}"></div></div></div>
+            <div class="cat-val">${c.actual.toFixed(1)}/${c.maxScore}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-top:16px;font-size:13px">
+        <thead>
+          <tr style="background:#f9fafb">
+            <th style="text-align:left;padding:8px 10px;border-bottom:2px solid #e5e7eb">评价维度</th>
+            <th style="text-align:center;padding:8px 10px;border-bottom:2px solid #e5e7eb">实际得分</th>
+            <th style="text-align:center;padding:8px 10px;border-bottom:2px solid #e5e7eb">满分</th>
+            <th style="text-align:center;padding:8px 10px;border-bottom:2px solid #e5e7eb">得分率</th>
+            <th style="text-align:center;padding:8px 10px;border-bottom:2px solid #e5e7eb">等级</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${catScores.map(c=>{
+            const p=c.maxScore>0?(c.actual/c.maxScore*100):0;
+            const lv=getLevelInfo(p);
+            return `<tr>
+              <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;font-weight:500">${c.name}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;text-align:center;font-weight:600;color:${c.color}">${c.actual.toFixed(1)}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;text-align:center;color:#9ca3af">${c.maxScore}</td>
+              <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;text-align:center">${p.toFixed(1)}%</td>
+              <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;text-align:center">
+                <span style="background:${lv.bg};color:${lv.color};padding:2px 8px;border-radius:10px;font-size:12px">${lv.label}</span>
+              </td>
+            </tr>`;
+          }).join('')}
+          <tr style="background:#f9fafb;font-weight:700">
+            <td style="padding:8px 10px">综合总分</td>
+            <td style="padding:8px 10px;text-align:center;color:${level.color};font-size:16px">${total.toFixed(1)}</td>
+            <td style="padding:8px 10px;text-align:center;color:#9ca3af">${TOTAL_MAX}</td>
+            <td style="padding:8px 10px;text-align:center">${pct.toFixed(1)}%</td>
+            <td style="padding:8px 10px;text-align:center">
+              <span style="background:${level.bg};color:${level.color};padding:2px 8px;border-radius:10px;font-size:12px">${level.label}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" id="rpt-items">
+      <div class="card-title">🔍 指标得分明细</div>
+      ${catScores.map(c=>`
+        <div style="margin-bottom:16px">
+          <div style="font-size:13px;font-weight:600;color:${c.color};margin-bottom:8px;padding:6px 10px;background:${c.bg};border-radius:6px">${c.name}</div>
+          ${c.items.map(item=>{
+            const s=scores[item.id]||0;
+            const p=(item.max>0?(s/item.max*100):0);
+            const colors={good:'#16a34a',medium:'#d97706',poor:'#dc2626',pending:'#6b7280'};
+            return `<div style="display:grid;grid-template-columns:1fr 80px 52px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #f9fafb">
+              <div>
+                <div style="font-size:13px;color:#374151;font-weight:500">${item.name}</div>
+                <div style="font-size:11px;color:#9ca3af">${item.subtitle}</div>
+              </div>
+              <div style="height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden">
+                <div style="height:100%;width:${p}%;background:${colors.pending};border-radius:3px"></div>
+              </div>
+              <div style="font-size:12px;font-weight:600;color:#374151;text-align:right">${s}/${item.max}</div>
+            </div>`;
+          }).join('')}
+        </div>`).join('')}
+    </div>
+
+    <div class="card" id="rpt-recs">
+      <div class="card-title">💡 改进建议</div>
+      <ul class="rec-list">
+        ${recs.map(r=>`<li>
+          <div class="rec-icon" style="background:${r.bg};color:${r.color}">${r.icon}</div>
+          <div><strong>${r.title}：</strong>${r.desc}</div>
+        </li>`).join('')}
+      </ul>
+    </div>
+
+    <div class="card" style="font-size:12px;color:#9ca3af;text-align:center" id="rpt-footer">
+      本报告依据 GB/T 36132-2025《绿色工厂评价通则》（2025年12月31日实施）生成 &nbsp;·&nbsp;
+      评分方法：基准值（行业均值）/ 引领值（行业前5%水平）&nbsp;·&nbsp;
+      评价结果仅供参考，以第三方机构最终认定为准
+    </div>`;
+
+  setTimeout(()=>renderCharts(catScores), 150);
+}
+
+function generateRecs(catScores) {
+  const recs = [];
+  catScores.forEach(c => {
+    const p = c.actual/c.maxScore;
+    const base = {bg:c.bg, color:c.color};
+    if (c.id==='energy' && p<0.7)
+      recs.push({...base,icon:'🔋',title:'能源低碳化',desc:'建议开展能源审计，摸清能耗家底；推进高耗能设备变频改造和余热余压回收利用；扩大屋顶光伏装机规模，增加绿电采购比例；建立碳排放核算体系，制定碳达峰路径图。'});
+    if (c.id==='resource' && p<0.7)
+      recs.push({...base,icon:'💧',title:'资源高效化',desc:'建议建立用水计量体系，开展水平衡测试；推进中水回用和雨水收集，提高废水回用率至70%以上；推进一般工业固废精细化分类，提升综合利用率至95%；规范危险废物管理台账。'});
+    if (c.id==='clean' && p<0.7)
+      recs.push({...base,icon:'🌬',title:'生产洁净化',desc:'建议对标行业排放强度引领值，加强废气VOCs治理（活性炭吸附/RTO/冷凝回收）；安装废气在线监测系统并联网；优化废水处理工艺链，提升排放标准至一级A。'});
+    if (c.id==='product' && p<0.7)
+      recs.push({...base,icon:'📦',title:'产品绿色化',desc:'建议建立产品生态设计程序，从设计阶段引入绿色理念；推进产品生命周期评价（LCA）；积极申请国家绿色产品认证或中国环境标志认证；完善RoHS/REACH有害物质管控。'});
+    if (c.id==='land' && p<0.7)
+      recs.push({...base,icon:'🏗',title:'用地集约化',desc:'建议优化厂区总平面布局，采用多层厂房和立体仓库，提高容积率；加强单位用地面积产值管理；完善厂区生态设施，提升绿化率至15%以上。'});
+  });
+  if (recs.length===0)
+    recs.push({bg:'#dcfce7',color:'#16a34a',icon:'🏆',title:'综合评价优秀',desc:'贵工厂绿色化水平较高，各维度表现良好。建议继续保持并持续改进，积极参与国家级绿色工厂认定申报。'});
+  recs.push({bg:'#f3f4f6',color:'#6b7280',icon:'📈',title:'持续改进机制',desc:'建议建立绿色工厂年度目标考核机制，设立关键绩效指标（KPI）追踪能耗、排放、废物等数据趋势；将绿色发展目标纳入企业战略规划。'});
+  return recs;
+}
+
+function renderCharts(catScores) {
+  const rc = document.getElementById('radarChart');
+  if (rc && !rc._ci) {
+    rc._ci = new Chart(rc, {
+      type:'radar',
+      data:{
+        labels:catScores.map(c=>c.name),
+        datasets:[
+          {label:'实际得分率',data:catScores.map(c=>Math.round(c.actual/c.maxScore*100)),
+           backgroundColor:'rgba(22,163,74,0.15)',borderColor:'#16a34a',borderWidth:2,
+           pointBackgroundColor:'#16a34a',pointRadius:4},
+          {label:'满分基准',data:catScores.map(()=>100),
+           backgroundColor:'rgba(0,0,0,0)',borderColor:'#e5e7eb',borderWidth:1,
+           borderDash:[4,4],pointRadius:0}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        scales:{r:{min:0,max:100,ticks:{stepSize:25,font:{size:10}},
+          pointLabels:{font:{size:11}},grid:{color:'#e5e7eb'}}},
+        plugins:{legend:{display:false}}}
+    });
+  }
+  const bc = document.getElementById('barChart');
+  if (bc && !bc._ci) {
+    bc._ci = new Chart(bc, {
+      type:'bar',
+      data:{
+        labels:catScores.map(c=>c.name),
+        datasets:[{label:'得分率 %',data:catScores.map(c=>Math.round(c.actual/c.maxScore*100)),
+          backgroundColor:catScores.map(c=>c.color+'cc'),borderColor:catScores.map(c=>c.color),
+          borderWidth:1.5,borderRadius:5}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:11}},grid:{color:'#f3f4f6'}},
+          x:{ticks:{font:{size:11}},grid:{display:false}}},
+        plugins:{legend:{display:false}}}
+    });
+  }
+}
+
+/* ===== PDF ===== */
+async function exportPDF() {
+  const btn = document.getElementById('pdfBtn');
+  btn.textContent = '⏳ 生成中...'; btn.disabled = true;
+  try {
+    const {jsPDF} = window.jspdf;
+    const content = document.getElementById('report-content');
+    const canvas = await html2canvas(content,{scale:2,useCORS:true,backgroundColor:'#f0f7f0',logging:false,windowWidth:900});
+    const pdf = new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgW = pageW-20;
+    let srcY = 0, remainH = canvas.height * imgW / canvas.width;
+    while (remainH > 0) {
+      const sliceH = Math.min(remainH, pageH-20);
+      const sc = document.createElement('canvas');
+      sc.width = canvas.width;
+      sc.height = sliceH / imgW * canvas.width;
+      sc.getContext('2d').drawImage(canvas, 0, srcY*canvas.width/imgW, canvas.width, sc.height, 0, 0, sc.width, sc.height);
+      if (srcY > 0) pdf.addPage();
+      pdf.addImage(sc.toDataURL('image/png'),'PNG',10,10,imgW,sliceH);
+      srcY += sliceH; remainH -= sliceH;
+    }
+    pdf.save(`绿色工厂评价报告_${document.getElementById('f_company').value||'企业'}_${document.getElementById('f_year').value||'2025'}.pdf`);
+  } catch(e) { alert('PDF生成失败：'+e.message); }
+  btn.textContent = '📄 导出PDF'; btn.disabled = false;
+}
+
+/* ===== 重置 ===== */
+function resetAll() {
+  if (!confirm('确认重置所有数据？')) return;
+  document.querySelectorAll('input,select').forEach(el=>{
+    if (el.type==='number') el.value='';
+    else if (el.tagName==='SELECT') el.selectedIndex=0;
+    else el.value='';
+  });
+  document.getElementById('f_year').value='2025';
+  Object.keys(scores).forEach(k=>scores[k]=0);
+  Object.keys(inputValues).forEach(k=>inputValues[k]='');
+  CATEGORIES.forEach(cat=>{
+    const el=document.getElementById('cat_score_'+cat.id);
+    if(el) el.textContent='0';
+    cat.items.forEach(item=>{
+      const sv=document.getElementById('score_val_'+item.id);
+      if(sv){sv.textContent='—';sv.style.color='var(--gray-400)';}
+      const cr=document.getElementById('calc_result_'+item.id);
+      if(cr) cr.style.display='none';
+      const as=document.getElementById('auto_score_'+item.id);
+      if(as) as.innerHTML='<span style="color:var(--gray-400)">—</span> <span class="auto-score-max">/ '+item.max+'分</span>';
+    });
+  });
+  goPage(0);
+}
+
+/* ===== 启动 ===== */
+initPages();
+updateNav();
+</script>
+</body>
+</html>
